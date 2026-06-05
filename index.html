@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JoSAA 2025 — College Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #18181f;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f0f5;
+    --muted: #888899;
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --gold: #f59e0b;
+    --teal: #14b8a6;
+    --pink: #ec4899;
+    --card-bg: #13131a;
+    --card-border: rgba(255,255,255,0.08);
+    --radius: 12px;
+    --radius-lg: 18px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+  h1,h2,h3,h4,h5 { font-family: 'Syne', sans-serif; }
+
+  /* Layout */
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  .header { border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 60px; background: rgba(10,10,15,0.95); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent2); }
+  .badge-2025 { background: linear-gradient(135deg, var(--accent), var(--pink)); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.5px; }
+  
+  .main { display: grid; grid-template-columns: 340px 1fr; gap: 0; flex: 1; }
+  
+  /* Sidebar */
+  .sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 1.5rem; overflow-y: auto; height: calc(100vh - 60px); position: sticky; top: 60px; }
+  .sidebar-title { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1rem; }
+  .field { margin-bottom: 1.2rem; }
+  .field label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+  .field input, .field select { width: 100%; background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; padding: 9px 12px; color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .field input[type=range] { padding: 0; background: transparent; border: none; }
+  
+  .checkbox-group { display: flex; flex-direction: column; gap: 6px; }
+  .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; padding: 4px 0; }
+  .checkbox-item input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+  
+  .btn-predict { width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 600; font-family: 'Syne', sans-serif; color: white; cursor: pointer; transition: opacity 0.2s, transform 0.1s; margin-top: 0.5rem; letter-spacing: 0.3px; }
+  .btn-predict:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-predict:active { transform: translateY(0); }
+  
+  .btn-reset { width: 100%; background: transparent; border: 1px solid var(--border2); border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.2s; margin-top: 6px; }
+  .btn-reset:hover { border-color: var(--border); color: var(--text); }
+
+  /* Content area */
+  .content { padding: 1.5rem; overflow-y: auto; }
+  
+  /* Hero / landing */
+  .hero { text-align: center; padding: 4rem 2rem; }
+  .hero h1 { font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -1px; line-height: 1.1; margin-bottom: 1rem; }
+  .hero h1 span { background: linear-gradient(135deg, var(--accent2), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { font-size: 16px; color: var(--muted); max-width: 500px; margin: 0 auto 2rem; line-height: 1.7; }
+  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; max-width: 800px; margin: 0 auto; }
+  .feature-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 1.25rem; text-align: left; }
+  .feature-icon { font-size: 24px; margin-bottom: 8px; }
+  .feature-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .feature-card p { font-size: 13px; color: var(--muted); }
+
+  /* Results */
+  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 10px; }
+  .results-header h2 { font-size: 20px; font-weight: 700; }
+  .results-meta { font-size: 13px; color: var(--muted); }
+  
+  /* Summary stats */
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 1rem 1.1rem; }
+  .stat-card .stat-val { font-size: 26px; font-weight: 700; font-family: 'Syne', sans-serif; }
+  .stat-card .stat-lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .stat-card.green .stat-val { color: var(--green); }
+  .stat-card.amber .stat-val { color: var(--amber); }
+  .stat-card.red .stat-val { color: var(--red); }
+  .stat-card.gold .stat-val { color: var(--gold); }
+
+  /* Filter bar */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; }
+  .filter-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: 99px; padding: 5px 14px; font-size: 13px; cursor: pointer; color: var(--muted); transition: all 0.18s; white-space: nowrap; }
+  .filter-btn:hover { border-color: var(--border2); color: var(--text); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .filter-btn.green.active { background: #166534; border-color: var(--green); color: var(--green); }
+  .filter-btn.amber.active { background: #92400e; border-color: var(--amber); color: var(--amber); }
+  .filter-btn.red.active { background: #7f1d1d; border-color: var(--red); color: var(--red); }
+  .filter-btn.gold.active { background: #78350f; border-color: var(--gold); color: var(--gold); }
+
+  /* Search bar */
+  .search-wrap { position: relative; margin-bottom: 1.25rem; }
+  .search-wrap input { width: 100%; background: var(--bg3); border: 1px solid var(--border2); border-radius: 10px; padding: 10px 16px 10px 40px; font-size: 14px; color: var(--text); font-family: 'DM Sans',sans-serif; outline: none; transition: border-color 0.2s; }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+
+  /* Result cards */
+  .cards-grid { display: flex; flex-direction: column; gap: 10px; }
+  .result-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; transition: border-color 0.2s; position: relative; overflow: hidden; }
+  .result-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 99px 0 0 99px; }
+  .result-card.safe::before { background: var(--green); }
+  .result-card.target::before { background: var(--amber); }
+  .result-card.dream::before { background: var(--red); }
+  .result-card.gem::before { background: var(--gold); }
+  .result-card:hover { border-color: var(--border2); }
+  
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .card-institute { font-weight: 600; font-size: 15px; line-height: 1.3; }
+  .card-program { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+  .pred-badge { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 99px; white-space: nowrap; }
+  .pred-badge.safe { background: rgba(34,197,94,0.15); color: var(--green); }
+  .pred-badge.target { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .pred-badge.dream { background: rgba(239,68,68,0.15); color: var(--red); }
+  .pred-badge.gem { background: rgba(245,158,11,0.12); color: var(--gold); border: 1px solid rgba(245,158,11,0.3); }
+  
+  .prob-bar-wrap { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .prob-bar { flex: 1; height: 4px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+  .prob-fill { height: 100%; border-radius: 99px; transition: width 0.4s; }
+  .prob-fill.safe { background: var(--green); }
+  .prob-fill.target { background: var(--amber); }
+  .prob-fill.dream { background: var(--red); }
+  .prob-fill.gem { background: var(--gold); }
+  .prob-pct { font-size: 12px; font-weight: 600; min-width: 36px; text-align: right; }
+  
+  .card-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .meta-chip { font-size: 11px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; color: var(--muted); }
+  .meta-chip.type { font-weight: 600; }
+  .meta-chip.type.IIT { color: #818cf8; border-color: rgba(129,140,248,0.3); background: rgba(129,140,248,0.08); }
+  .meta-chip.type.NIT { color: var(--teal); border-color: rgba(20,184,166,0.3); background: rgba(20,184,166,0.08); }
+  .meta-chip.type.IIIT { color: var(--amber); border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); }
+  
+  .rank-info { display: flex; gap: 16px; margin-top: 8px; }
+  .rank-item { font-size: 12px; }
+  .rank-item .rl { color: var(--muted); }
+  .rank-item .rv { font-weight: 600; font-family: 'Syne', sans-serif; }
+
+  /* Insights */
+  .insights-box { background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(236,72,153,0.05)); border: 1px solid rgba(99,102,241,0.2); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem; }
+  .insights-box h3 { font-size: 14px; font-weight: 600; color: var(--accent2); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .insight-item { font-size: 13px; color: var(--muted); padding: 5px 0; display: flex; gap: 8px; align-items: flex-start; }
+  .insight-item::before { content: '→'; color: var(--accent2); flex-shrink: 0; margin-top: 1px; }
+
+  /* Charts */
+  .charts-section { margin-bottom: 1.5rem; }
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .chart-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 1.1rem; }
+  .chart-card h4 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .chart-wrap { position: relative; height: 180px; }
+
+  /* Preference list */
+  .pref-section { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem; }
+  .pref-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .pref-header h3 { font-size: 16px; font-weight: 700; }
+  .btn-export { background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--text); cursor: pointer; transition: all 0.18s; }
+  .btn-export:hover { border-color: var(--accent); color: var(--accent2); }
+  .pref-group { margin-bottom: 1rem; }
+  .pref-group-title { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  .pref-group-title.dream { color: var(--red); }
+  .pref-group-title.target { color: var(--amber); }
+  .pref-group-title.safe { color: var(--green); }
+  .pref-item { font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; color: var(--muted); }
+  .pref-item:last-child { border-bottom: none; }
+  .pref-item strong { color: var(--text); }
+  .pref-num { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; color: var(--muted); }
+
+  /* Empty/Loading */
+  .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
+  .empty-state p { font-size: 15px; }
+  .loading { display: flex; align-items: center; justify-content: center; padding: 3rem; gap: 10px; color: var(--muted); }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Pagination */
+  .pagination { display: flex; gap: 6px; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
+  .page-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; color: var(--muted); transition: all 0.18s; }
+  .page-btn:hover { border-color: var(--border2); color: var(--text); }
+  .page-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+  /* Tab system in results */
+  .result-tabs { display: flex; gap: 4px; background: var(--bg3); border-radius: 10px; padding: 3px; margin-bottom: 1.25rem; width: fit-content; }
+  .result-tab { padding: 6px 16px; font-size: 13px; font-weight: 500; border-radius: 8px; cursor: pointer; color: var(--muted); transition: all 0.18s; }
+  .result-tab.active { background: var(--bg2); color: var(--text); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; }
+    .summary-grid { grid-template-columns: repeat(2,1fr); }
+    .charts-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .header { padding: 0 1rem; }
+    .content { padding: 1rem; }
+    .summary-grid { grid-template-columns: repeat(2,1fr); }
+  }
+
+  /* Range slider */
+  input[type=range] { appearance: none; height: 4px; background: var(--border2); border-radius: 99px; cursor: pointer; width: 100%; }
+  input[type=range]::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; cursor: pointer; }
+  .range-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .range-val { text-align: center; font-size: 13px; font-weight: 600; color: var(--accent2); margin-top: 4px; }
+
+  /* Branch tags */
+  .branch-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .branch-tag { font-size: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; cursor: pointer; color: var(--muted); transition: all 0.18s; }
+  .branch-tag.selected { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); color: var(--accent2); }
+
+  .divider { height: 1px; background: var(--border); margin: 1.2rem 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="logo">JoSAA <span>Predictor</span></div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="badge-2025">2025</span>
+      <span style="font-size:13px;color:var(--muted)">10,436 cutoffs • Round 6</span>
+    </div>
+  </header>
+
+  <div class="main">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-title">Your Details</div>
+
+      <div class="field">
+        <label>Your JEE Rank</label>
+        <input type="number" id="rankInput" placeholder="e.g. 5000" min="1" max="999999">
+      </div>
+
+      <div class="field">
+        <label>Category</label>
+        <select id="categorySelect">
+          <option value="OPEN">OPEN (General)</option>
+          <option value="EWS">EWS</option>
+          <option value="OBC-NCL">OBC-NCL</option>
+          <option value="SC">SC</option>
+          <option value="ST">ST</option>
+          <option value="OPEN (PwD)">OPEN (PwD)</option>
+          <option value="OBC-NCL (PwD)">OBC-NCL (PwD)</option>
+          <option value="EWS (PwD)">EWS (PwD)</option>
+          <option value="SC (PwD)">SC (PwD)</option>
+          <option value="ST (PwD)">ST (PwD)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Gender</label>
+        <select id="genderSelect">
+          <option value="Gender-Neutral">Gender Neutral</option>
+          <option value="Female-only (including Supernumerary)">Female Only</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Quota</label>
+        <select id="quotaSelect">
+          <option value="AI">All India (AI)</option>
+          <option value="OS">Other State (OS)</option>
+          <option value="HS">Home State (HS)</option>
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label>Institute Type</label>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" name="instType" value="IIT" checked> IITs</label>
+          <label class="checkbox-item"><input type="checkbox" name="instType" value="NIT" checked> NITs</label>
+          <label class="checkbox-item"><input type="checkbox" name="instType" value="IIIT" checked> IIITs</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Branch Preferences <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <div class="branch-tags" id="branchTags"></div>
+      </div>
+
+      <div class="field">
+        <label>State Preference <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <select id="stateSelect">
+          <option value="">Any State</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Rank Buffer (for cutoff flexibility)</label>
+        <input type="range" id="bufferRange" min="0" max="30" value="10" step="5">
+        <div class="range-labels"><span>0%</span><span>10%</span><span>20%</span><span>30%</span></div>
+        <div class="range-val" id="bufferVal">±10% buffer</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label>Include Similar Branches</label>
+        <label class="checkbox-item"><input type="checkbox" id="similarBranches" checked> Suggest related branches</label>
+      </div>
+
+      <button class="btn-predict" onclick="runPredictor()">🔮 Predict My Colleges</button>
+      <button class="btn-reset" onclick="resetAll()">Reset</button>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="content" id="mainContent">
+      <!-- Hero shown initially -->
+      <div class="hero" id="heroSection">
+        <h1>Find Your Perfect<br><span>College Match</span></h1>
+        <p>Enter your JEE rank and preferences to get intelligent predictions across all IITs, NITs, and IIITs — with admission probabilities and smart insights.</p>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🟢</div>
+            <h3>Safe Picks</h3>
+            <p>Colleges well within your rank range — high confidence admissions.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🟡</div>
+            <h3>Target Options</h3>
+            <p>Competitive choices where you have a realistic chance.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔴</div>
+            <h3>Dream Colleges</h3>
+            <p>Aspirational picks — slightly above your rank but worth trying.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⭐</div>
+            <h3>Hidden Gems</h3>
+            <p>Lesser-known programs at strong institutes with great prospects.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results section (hidden initially) -->
+      <div id="resultsSection" style="display:none">
+        <!-- Smart insights -->
+        <div class="insights-box" id="insightsBox"></div>
+
+        <!-- Summary -->
+        <div class="summary-grid" id="summaryGrid"></div>
+
+        <!-- Charts -->
+        <div class="charts-section">
+          <div class="charts-grid">
+            <div class="chart-card">
+              <h4>Admission Probability</h4>
+              <div class="chart-wrap"><canvas id="probChart" role="img" aria-label="Probability distribution"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <h4>By Institute Type</h4>
+              <div class="chart-wrap"><canvas id="typeChart" role="img" aria-label="Institute type distribution"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <h4>Top Branches Available</h4>
+              <div class="chart-wrap"><canvas id="branchChart" role="img" aria-label="Branch distribution"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <h4>Rank vs Closing Rank</h4>
+              <div class="chart-wrap"><canvas id="rankChart" role="img" aria-label="Rank scatter plot"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preference List -->
+        <div class="pref-section" id="prefList"></div>
+
+        <!-- Results header + filters -->
+        <div class="results-header">
+          <div>
+            <h2>All Results</h2>
+            <div class="results-meta" id="resultsMeta"></div>
+          </div>
+          <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
+        </div>
+
+        <!-- Search -->
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchBar" placeholder="Search by college, branch, state..." oninput="applyFilters()">
+        </div>
+
+        <!-- Filter buttons -->
+        <div class="filter-bar" id="filterBar">
+          <button class="filter-btn active" data-filter="all" onclick="setFilter(this,'all')">All</button>
+          <button class="filter-btn green" data-filter="safe" onclick="setFilter(this,'safe')">🟢 Safe</button>
+          <button class="filter-btn amber" data-filter="target" onclick="setFilter(this,'target')">🟡 Target</button>
+          <button class="filter-btn red" data-filter="dream" onclick="setFilter(this,'dream')">🔴 Dream</button>
+          <button class="filter-btn gold" data-filter="gem" onclick="setFilter(this,'gem')">⭐ Hidden Gems</button>
+          <select id="filterType" onchange="applyFilters()" style="font-size:13px;padding:5px 10px;border-radius:99px;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">
+            <option value="">All Types</option>
+            <option value="IIT">IIT</option>
+            <option value="NIT">NIT</option>
+            <option value="IIIT">IIIT</option>
+          </select>
+        </div>
+
+        <!-- Cards -->
+        <div class="cards-grid" id="cardsGrid"></div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+// ===== DATA LOADING =====
+let DATA = [];
+let allResults = [];
+let filteredResults = [];
+let activeFilter = 'all';
+let currentPage = 1;
+const PAGE_SIZE = 30;
+let chartInstances = {};
+
+// Selected branches
+let selectedBranches = new Set();
+
+const BRANCH_GROUPS = {
+  'Computer Science': ['Computer Science and Engineering','CSE','CS','Information Technology','Computer Engineering','Computer and Communication Engineering','Computer Science','B.Tech in Mathematics and Computing'],
+  'AI & Data Science': ['Artificial Intelligence','Artificial Intelligence and Data Science','Artificial Intelligence and Data Analytics','Artificial Intelligence and Data Engineering','Artificial Intelligence and Machine Learning','Data Science and Artificial Intelligence','Data Science and Engineering'],
+  'Mathematics & Computing': ['Mathematics and Computing','B.Tech in Mathematics and Computing','Mathematical and Computing Sciences'],
+  'Electronics': ['Electronics and Communication Engineering','Electronics Engineering','Electrical and Electronics Engineering','Electronics and Electrical Engineering','Electronics and Computer Engineering','B.Tech in Microelectronics & VLSI','Microelectronics and VLSI','Avionics'],
+  'Electrical': ['Electrical Engineering','Power Engineering','Power Systems'],
+  'Mechanical': ['Mechanical Engineering','Industrial Engineering','Production Engineering','Manufacturing Engineering'],
+  'Civil': ['Civil Engineering','Environmental Science and Engineering','Infrastructure Engineering'],
+  'Chemical': ['Chemical Engineering','Chemical Science and Technology','Chemical Technology'],
+  'Aerospace': ['Aerospace Engineering','Aeronautical Engineering'],
+  'Biotechnology': ['Biotechnology','Biomedical Engineering','Biological Engineering','Biosciences and Bioengineering'],
+};
+
+const STATES = ['Andhra Pradesh','Assam','Bihar','Chhattisgarh','Delhi','Goa','Gujarat','Haryana','Himachal Pradesh','Jammu & Kashmir','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Odisha','Punjab','Rajasthan','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
+
+// ===== INIT =====
+async function init() {
+  // Load data
+  try {
+    const res = await fetch('data.json');
+    DATA = await res.json();
+    console.log('Loaded', DATA.length, 'records');
+  } catch(e) {
+    console.error('Failed to load data.json:', e);
+    DATA = [];
+  }
+
+  // Populate branch tags
+  const tagsEl = document.getElementById('branchTags');
+  Object.keys(BRANCH_GROUPS).forEach(b => {
+    const tag = document.createElement('span');
+    tag.className = 'branch-tag';
+    tag.textContent = b;
+    tag.onclick = () => toggleBranch(b, tag);
+    tagsEl.appendChild(tag);
+  });
+
+  // Populate states
+  const stateEl = document.getElementById('stateSelect');
+  STATES.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    stateEl.appendChild(opt);
+  });
+
+  // Range display
+  document.getElementById('bufferRange').addEventListener('input', function() {
+    document.getElementById('bufferVal').textContent = `±${this.value}% buffer`;
+  });
+}
+
+function toggleBranch(b, el) {
+  if (selectedBranches.has(b)) { selectedBranches.delete(b); el.classList.remove('selected'); }
+  else { selectedBranches.add(b); el.classList.add('selected'); }
+}
+
+// ===== PREDICTION ENGINE =====
+function getProbability(rank, cr, buffer) {
+  if (rank <= cr) {
+    // rank is within cutoff - calculate how safely
+    const margin = (cr - rank) / cr;
+    if (margin > 0.15) return { pct: 95, cat: 'safe' };
+    if (margin > 0.08) return { pct: Math.round(75 + margin * 133), cat: 'safe' };
+    return { pct: Math.round(60 + margin * 250), cat: 'target' };
+  } else {
+    // rank is worse than cutoff
+    const overshoot = (rank - cr) / cr;
+    if (overshoot <= 0.05) return { pct: Math.round(55 - overshoot * 200), cat: 'target' };
+    if (overshoot <= (buffer/100)) return { pct: Math.round(40 - overshoot * 100), cat: 'dream' };
+    return null; // too far
+  }
+}
+
+function isRelatedBranch(program, selectedSet) {
+  if (selectedSet.size === 0) return true; // no filter = include all
+  for (const [group, variants] of Object.entries(BRANCH_GROUPS)) {
+    if (selectedSet.has(group)) {
+      for (const v of variants) {
+        if (program.toLowerCase().includes(v.toLowerCase())) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function isHiddenGem(row) {
+  // Hidden gem: good institute (IIT/IIIT or top NIT) with less-common program, decent prospects
+  const lessCommon = ['AI','Data Science','Materials','Geophysics','Ocean','Bio','Pharma','Architecture','Planning','Systems'];
+  return row.t !== 'IIIT' && lessCommon.some(kw => row.p.toLowerCase().includes(kw.toLowerCase()));
+}
+
+function runPredictor() {
+  const rank = parseInt(document.getElementById('rankInput').value);
+  if (!rank || rank < 1) { alert('Please enter a valid rank!'); return; }
+  const category = document.getElementById('categorySelect').value;
+  const gender = document.getElementById('genderSelect').value;
+  const quota = document.getElementById('quotaSelect').value;
+  const buffer = parseInt(document.getElementById('bufferRange').value);
+  const includeSimilar = document.getElementById('similarBranches').checked;
+  const stateFilter = document.getElementById('stateSelect').value;
+  const typeFilter = [...document.querySelectorAll('input[name=instType]:checked')].map(x=>x.value);
+
+  allResults = [];
+
+  DATA.forEach(row => {
+    // Type filter
+    if (!typeFilter.includes(row.t)) return;
+    // Category filter
+    if (row.s !== category) return;
+    // Gender filter
+    if (row.g !== gender) return;
+    // Quota filter
+    if (row.q !== quota) return;
+    // State filter
+    if (stateFilter && row.st !== stateFilter) return;
+    // Branch filter (include related if similar branches on)
+    if (selectedBranches.size > 0) {
+      const matchesDirect = isRelatedBranch(row.p, selectedBranches);
+      if (!matchesDirect) return;
+    }
+
+    const prob = getProbability(rank, row.cr, buffer);
+    if (!prob) return; // too far beyond cutoff
+
+    let cat = prob.cat;
+    let pct = Math.max(1, Math.min(99, prob.pct));
+
+    // Check if hidden gem
+    let isGem = false;
+    if (cat === 'target' || cat === 'safe') {
+      if (isHiddenGem(row)) { isGem = true; cat = 'gem'; }
+    }
+
+    allResults.push({ ...row, rank, cat, pct, isGem });
+  });
+
+  // Sort: safe first, then target, then dream, by probability desc
+  const catOrder = { safe: 0, gem: 1, target: 2, dream: 3 };
+  allResults.sort((a, b) => {
+    if (catOrder[a.cat] !== catOrder[b.cat]) return catOrder[a.cat] - catOrder[b.cat];
+    return b.pct - a.pct;
+  });
+
+  activeFilter = 'all';
+  currentPage = 1;
+  applyFilters();
+  renderSummary(rank, category);
+  renderInsights(rank, category);
+  renderCharts();
+  renderPrefList();
+
+  document.getElementById('heroSection').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'block';
+
+  // Reset filter buttons
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.filter-btn[data-filter=all]').classList.add('active');
+}
+
+function applyFilters() {
+  const search = document.getElementById('searchBar').value.toLowerCase();
+  const typeFilter = document.getElementById('filterType').value;
+
+  filteredResults = allResults.filter(r => {
+    if (activeFilter !== 'all' && r.cat !== activeFilter) return false;
+    if (typeFilter && r.t !== typeFilter) return false;
+    if (search && !r.i.toLowerCase().includes(search) && !r.p.toLowerCase().includes(search) && !r.st.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  document.getElementById('resultsMeta').textContent = `${filteredResults.length} results found`;
+  currentPage = 1;
+  renderCards();
+  renderPagination();
+}
+
+function setFilter(el, filter) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  activeFilter = filter;
+  applyFilters();
+}
+
+function renderCards() {
+  const grid = document.getElementById('cardsGrid');
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page = filteredResults.slice(start, start + PAGE_SIZE);
+
+  if (!page.length) {
+    grid.innerHTML = '<div class="empty-state"><p>No results match your filters.</p></div>';
+    return;
+  }
+
+  grid.innerHTML = page.map(r => {
+    const label = r.cat === 'safe' ? '🟢 Safe' : r.cat === 'target' ? '🟡 Target' : r.cat === 'gem' ? '⭐ Hidden Gem' : '🔴 Dream';
+    const fillClass = r.cat === 'gem' ? 'gem' : r.cat;
+    return `
+    <div class="result-card ${r.cat}">
+      <div class="card-top">
+        <div>
+          <div class="card-institute">${r.i}</div>
+          <div class="card-program">${r.p}</div>
+        </div>
+        <div class="card-right">
+          <span class="pred-badge ${r.cat}">${label}</span>
+          <div class="prob-bar-wrap" style="width:120px">
+            <div class="prob-bar"><div class="prob-fill ${fillClass}" style="width:${r.pct}%"></div></div>
+            <span class="prob-pct" style="color:${r.cat==='safe'?'var(--green)':r.cat==='dream'?'var(--red)':r.cat==='gem'?'var(--gold)':'var(--amber)'}">${r.pct}%</span>
+          </div>
+        </div>
+      </div>
+      <div class="rank-info">
+        <div class="rank-item"><span class="rl">Opening: </span><span class="rv">${r.or.toLocaleString()}</span></div>
+        <div class="rank-item"><span class="rl">Closing: </span><span class="rv">${r.cr.toLocaleString()}</span></div>
+        <div class="rank-item"><span class="rl">Your Rank: </span><span class="rv">${r.rank.toLocaleString()}</span></div>
+      </div>
+      <div class="card-meta">
+        <span class="meta-chip type ${r.t}">${r.t}</span>
+        <span class="meta-chip">${r.st}</span>
+        <span class="meta-chip">${r.q} Quota</span>
+        <span class="meta-chip">${r.s}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPagination() {
+  const totalPages = Math.ceil(filteredResults.length / PAGE_SIZE);
+  const el = document.getElementById('pagination');
+  if (totalPages <= 1) { el.innerHTML = ''; return; }
+
+  let html = '';
+  const show = (p) => `<button class="page-btn${p===currentPage?' active':''}" onclick="goPage(${p})">${p}</button>`;
+  if (currentPage > 1) html += `<button class="page-btn" onclick="goPage(${currentPage-1})">‹</button>`;
+  const start = Math.max(1, currentPage - 2);
+  const end = Math.min(totalPages, currentPage + 2);
+  for (let p = start; p <= end; p++) html += show(p);
+  if (currentPage < totalPages) html += `<button class="page-btn" onclick="goPage(${currentPage+1})">›</button>`;
+  el.innerHTML = html;
+}
+
+function goPage(p) {
+  currentPage = p;
+  renderCards();
+  renderPagination();
+  document.getElementById('resultsSection').scrollTop = 0;
+}
+
+function renderSummary(rank, category) {
+  const safe = allResults.filter(r=>r.cat==='safe').length;
+  const target = allResults.filter(r=>r.cat==='target').length;
+  const dream = allResults.filter(r=>r.cat==='dream').length;
+  const gem = allResults.filter(r=>r.cat==='gem').length;
+
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="stat-card green"><div class="stat-val">${safe}</div><div class="stat-lbl">🟢 Safe Options</div></div>
+    <div class="stat-card amber"><div class="stat-val">${target}</div><div class="stat-lbl">🟡 Target Options</div></div>
+    <div class="stat-card red"><div class="stat-val">${dream}</div><div class="stat-lbl">🔴 Dream Options</div></div>
+    <div class="stat-card gold"><div class="stat-val">${gem}</div><div class="stat-lbl">⭐ Hidden Gems</div></div>
+  `;
+}
+
+function renderInsights(rank, category) {
+  const insights = [];
+  const safe = allResults.filter(r=>r.cat==='safe');
+  const gems = allResults.filter(r=>r.cat==='gem');
+  const topSafe = safe.slice(0,3);
+
+  if (topSafe.length > 0) {
+    const names = topSafe.map(r => r.i.replace('Indian Institute of Technology', 'IIT').replace('National Institute of Technology,', 'NIT').replace('National Institute of Technology', 'NIT')).join(', ');
+    insights.push(`Your rank of ${rank.toLocaleString()} is safely within cutoffs at ${names} and more.`);
+  }
+
+  // Branch strength
+  const branchCounts = {};
+  safe.forEach(r => { branchCounts[r.p] = (branchCounts[r.p]||0)+1; });
+  const topBranch = Object.entries(branchCounts).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]);
+  if (topBranch.length > 0) insights.push(`Strong admission chances in ${topBranch.join(' and ')} across multiple institutes.`);
+
+  if (gems.length > 0) insights.push(`${gems.length} hidden gem opportunities detected — emerging programs at strong institutes with lower competition.`);
+
+  const iits = allResults.filter(r=>r.t==='IIT');
+  if (iits.length > 0) insights.push(`You have ${iits.length} IIT options including ${iits.slice(0,2).map(r=>r.i.replace('Indian Institute of Technology','IIT')).join(' and ')}.`);
+
+  const closeDream = allResults.filter(r=>r.cat==='dream' && r.pct >= 30);
+  if (closeDream.length > 0) insights.push(`${closeDream.length} dream college(s) are within ±10% of your rank — consider including them in your preference list.`);
+
+  document.getElementById('insightsBox').innerHTML = `
+    <h3>🧠 Smart Insights</h3>
+    ${insights.map(i=>`<div class="insight-item">${i}</div>`).join('')}
+  `;
+}
+
+function renderCharts() {
+  // Destroy existing charts
+  Object.values(chartInstances).forEach(c => c.destroy());
+  chartInstances = {};
+
+  const safe = allResults.filter(r=>r.cat==='safe').length;
+  const target = allResults.filter(r=>r.cat==='target').length;
+  const dream = allResults.filter(r=>r.cat==='dream').length;
+  const gem = allResults.filter(r=>r.cat==='gem').length;
+
+  // 1. Probability distribution donut
+  chartInstances.prob = new Chart(document.getElementById('probChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Safe','Hidden Gem','Target','Dream'],
+      datasets: [{ data: [safe,gem,target,dream], backgroundColor: ['#22c55e','#f59e0b','#f59e0b','#ef4444'], borderWidth: 0 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ display:false } } }
+  });
+
+  // 2. Institute type
+  const iitC = allResults.filter(r=>r.t==='IIT').length;
+  const nitC = allResults.filter(r=>r.t==='NIT').length;
+  const iiitC = allResults.filter(r=>r.t==='IIIT').length;
+  chartInstances.type = new Chart(document.getElementById('typeChart'), {
+    type: 'bar',
+    data: {
+      labels: ['IIT','NIT','IIIT'],
+      datasets: [{ data: [iitC,nitC,iiitC], backgroundColor: ['#818cf8','#14b8a6','#f59e0b'], borderWidth:0, borderRadius:6 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#666' } }, x:{ grid:{ display:false }, ticks:{ color:'#888' } } } }
+  });
+
+  // 3. Top branches
+  const branchCnt = {};
+  allResults.forEach(r => { const k = r.p.substring(0,25); branchCnt[k] = (branchCnt[k]||0)+1; });
+  const topBranches = Object.entries(branchCnt).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  chartInstances.branch = new Chart(document.getElementById('branchChart'), {
+    type: 'bar',
+    data: {
+      labels: topBranches.map(x=>x[0]),
+      datasets: [{ data: topBranches.map(x=>x[1]), backgroundColor: '#6366f1', borderWidth:0, borderRadius:4 }]
+    },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#666' } }, y:{ grid:{ display:false }, ticks:{ color:'#888', font:{ size:11 } } } } }
+  });
+
+  // 4. Rank scatter (sample 80 points)
+  const sample = allResults.slice(0, 80);
+  const userRank = allResults[0]?.rank || 0;
+  chartInstances.rank = new Chart(document.getElementById('rankChart'), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label: 'Safe', data: sample.filter(r=>r.cat==='safe').map(r=>({x:r.cr,y:r.pct})), backgroundColor: 'rgba(34,197,94,0.7)', pointRadius:4 },
+        { label: 'Target', data: sample.filter(r=>r.cat==='target'||r.cat==='gem').map(r=>({x:r.cr,y:r.pct})), backgroundColor: 'rgba(245,158,11,0.7)', pointRadius:4 },
+        { label: 'Dream', data: sample.filter(r=>r.cat==='dream').map(r=>({x:r.cr,y:r.pct})), backgroundColor: 'rgba(239,68,68,0.7)', pointRadius:4 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false },
+        annotation: {} },
+      scales: {
+        x:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#666', font:{size:10} }, title:{ display:true, text:'Closing Rank', color:'#666', font:{size:11} } },
+        y:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#666', font:{size:10} }, title:{ display:true, text:'Probability %', color:'#666', font:{size:11} } }
+      }
+    }
+  });
+}
+
+function renderPrefList() {
+  const dreams = allResults.filter(r=>r.cat==='dream').slice(0,5);
+  const targets = allResults.filter(r=>r.cat==='target'||r.cat==='gem').slice(0,8);
+  const safes = allResults.filter(r=>r.cat==='safe').slice(0,7);
+
+  const shortName = n => n.replace('Indian Institute of Technology','IIT').replace('National Institute of Technology,','NIT').replace('National Institute of Technology','NIT').replace('Indian Institute of Information Technology','IIIT');
+
+  let html = `<div class="pref-header"><h3>📋 Suggested Preference List</h3><button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button></div>`;
+  let num = 1;
+
+  if (dreams.length) {
+    html += `<div class="pref-group"><div class="pref-group-title dream">🔴 Dream Choices</div>`;
+    html += dreams.map(r => `<div class="pref-item"><div><strong>${shortName(r.i)}</strong> — ${r.p}</div><span class="pref-num">#${num++}</span></div>`).join('');
+    html += `</div>`;
+  }
+
+  if (targets.length) {
+    html += `<div class="pref-group"><div class="pref-group-title target">🟡 Target Choices</div>`;
+    html += targets.map(r => `<div class="pref-item"><div><strong>${shortName(r.i)}</strong> — ${r.p}</div><span class="pref-num">#${num++}</span></div>`).join('');
+    html += `</div>`;
+  }
+
+  if (safes.length) {
+    html += `<div class="pref-group"><div class="pref-group-title safe">🟢 Safe Choices</div>`;
+    html += safes.map(r => `<div class="pref-item"><div><strong>${shortName(r.i)}</strong> — ${r.p}</div><span class="pref-num">#${num++}</span></div>`).join('');
+    html += `</div>`;
+  }
+
+  document.getElementById('prefList').innerHTML = html;
+}
+
+function exportCSV() {
+  const rows = [['Institute','Program','State','Type','Quota','Seat Type','Opening Rank','Closing Rank','Your Rank','Category','Probability %']];
+  filteredResults.forEach(r => {
+    rows.push([r.i, r.p, r.st, r.t, r.q, r.s, r.or, r.cr, r.rank, r.cat, r.pct]);
+  });
+  const csv = rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'josaa_predictions.csv'; a.click();
+}
+
+function resetAll() {
+  document.getElementById('rankInput').value = '';
+  document.getElementById('categorySelect').value = 'OPEN';
+  document.getElementById('genderSelect').value = 'Gender-Neutral';
+  document.getElementById('quotaSelect').value = 'AI';
+  document.getElementById('bufferRange').value = 10;
+  document.getElementById('bufferVal').textContent = '±10% buffer';
+  document.getElementById('stateSelect').value = '';
+  document.getElementById('searchBar').value = '';
+  selectedBranches.clear();
+  document.querySelectorAll('.branch-tag').forEach(t=>t.classList.remove('selected'));
+  document.querySelectorAll('input[name=instType]').forEach(c=>c.checked=true);
+  document.getElementById('heroSection').style.display = 'block';
+  document.getElementById('resultsSection').style.display = 'none';
+  allResults = [];
+}
+
+init();
+</script>
+</body>
+</html>
